@@ -43,5 +43,5 @@ def invalidate_customer_cache() -> None:
         pass
 
 
-def build_customer_cache_key(page: int, page_size: int, search: str | None, industry: str | None, status: str | None) -> str:
-    return f"{CUSTOMER_LIST_KEY_PREFIX}{page}:{page_size}:{search or ''}:{industry or ''}:{status or ''}"
+def build_customer_cache_key(page: int, page_size: int, search: str | None, industry: str | None, status: str | None, user_id: int | None = None) -> str:
+    return f"{CUSTOMER_LIST_KEY_PREFIX}{user_id or 'all'}:{page}:{page_size}:{search or ''}:{industry or ''}:{status or ''}"

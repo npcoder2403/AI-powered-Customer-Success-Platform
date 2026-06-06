@@ -55,7 +55,7 @@ export default function Sidebar() {
       <nav className="flex-1 px-3 mt-2">
         <p className="px-3 mb-2 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Menu</p>
         <div className="space-y-0.5">
-          {navItems.filter((item) => !item.adminOnly || user?.role === "admin").map((item) => {
+          {navItems.filter((item) => !item.adminOnly || user?.role === "superadmin").map((item) => {
             const active = pathname.startsWith(item.href);
             return (
               <Link

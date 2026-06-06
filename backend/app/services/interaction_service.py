@@ -39,7 +39,7 @@ def get_interactions(
 ) -> dict:
     query = db.query(Interaction).options(joinedload(Interaction.ai_insight), joinedload(Interaction.customer))
 
-    if current_user and not _is_admin(current_user):
+    if current_user:
         query = query.filter(Interaction.created_by == current_user.id)
 
     if customer_id:
@@ -74,7 +74,7 @@ def get_interaction(db: Session, interaction_id: int, current_user: User | None 
     if not interaction:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Interaction not found")
 
-    if current_user and not _is_admin(current_user) and interaction.created_by != current_user.id:
+    if current_user and interaction.created_by != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
     return _to_dict(interaction)
@@ -105,7 +105,7 @@ def update_interaction(db: Session, interaction_id: int, data: InteractionUpdate
     if not interaction:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Interaction not found")
 
-    if current_user and not _is_admin(current_user) and interaction.created_by != current_user.id:
+    if current_user and interaction.created_by != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
     update_data = data.model_dump(exclude_unset=True)

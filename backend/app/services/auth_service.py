@@ -44,7 +44,7 @@ def seed_admin(db: Session) -> None:
         email="admin@csplatform.com",
         full_name="Admin",
         hashed_password=hash_password("admin123"),
-        role="admin",
+        role="superadmin",
     )
     db.add(admin)
     db.commit()

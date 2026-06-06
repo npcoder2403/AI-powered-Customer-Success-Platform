@@ -15,4 +15,4 @@ def metrics(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return get_dashboard_metrics(db)
+    return get_dashboard_metrics(db, current_user)

@@ -4,8 +4,13 @@ from sqlalchemy import or_
 from fastapi import HTTPException, status
 
 from app.models.customer import Customer
+from app.models.user import User
 from app.schemas.customer import CustomerCreate, CustomerUpdate, CustomerResponse
 from app.cache.redis_cache import invalidate_customer_cache
+
+
+def _is_admin(user: User) -> bool:
+    return user.role.value == "admin"
 
 
 def get_customers(
@@ -15,8 +20,12 @@ def get_customers(
     search: str | None = None,
     industry: str | None = None,
     customer_status: str | None = None,
+    current_user: User | None = None,
 ) -> dict:
     query = db.query(Customer)
+
+    if current_user:
+        query = query.filter(Customer.created_by == current_user.id)
 
     if search:
         query = query.filter(Customer.company_name.ilike(f"%{search}%"))
@@ -38,15 +47,19 @@ def get_customers(
     }
 
 
-def get_customer(db: Session, customer_id: int) -> Customer:
+def get_customer(db: Session, customer_id: int, current_user: User | None = None) -> Customer:
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if not customer:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
+    if current_user and customer.created_by != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
     return customer
 
 
-def create_customer(db: Session, data: CustomerCreate) -> Customer:
+def create_customer(db: Session, data: CustomerCreate, current_user: User | None = None) -> Customer:
     customer = Customer(**data.model_dump())
+    if current_user:
+        customer.created_by = current_user.id
     db.add(customer)
     db.commit()
     db.refresh(customer)
@@ -54,8 +67,8 @@ def create_customer(db: Session, data: CustomerCreate) -> Customer:
     return customer
 
 
-def update_customer(db: Session, customer_id: int, data: CustomerUpdate) -> Customer:
-    customer = get_customer(db, customer_id)
+def update_customer(db: Session, customer_id: int, data: CustomerUpdate, current_user: User | None = None) -> Customer:
+    customer = get_customer(db, customer_id, current_user)
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(customer, key, value)
@@ -65,8 +78,8 @@ def update_customer(db: Session, customer_id: int, data: CustomerUpdate) -> Cust
     return customer
 
 
-def delete_customer(db: Session, customer_id: int) -> None:
-    customer = get_customer(db, customer_id)
+def delete_customer(db: Session, customer_id: int, current_user: User | None = None) -> None:
+    customer = get_customer(db, customer_id, current_user)
     db.delete(customer)
     db.commit()
     invalidate_customer_cache()

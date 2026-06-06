@@ -21,12 +21,12 @@ def list_customers(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    cache_key = build_customer_cache_key(page, page_size, search, industry, status)
+    cache_key = build_customer_cache_key(page, page_size, search, industry, status, current_user.id)
     cached = get_cached_customers(cache_key)
     if cached:
         return cached
 
-    result = get_customers(db, page, page_size, search, industry, status)
+    result = get_customers(db, page, page_size, search, industry, status, current_user)
     set_cached_customers(cache_key, result)
     return result
 
@@ -37,16 +37,16 @@ def read_customer(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return get_customer(db, customer_id)
+    return get_customer(db, customer_id, current_user)
 
 
 @router.post("", response_model=CustomerResponse, status_code=201)
 def create(
     data: CustomerCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(get_current_user),
 ):
-    return create_customer(db, data)
+    return create_customer(db, data, current_user)
 
 
 @router.put("/{customer_id}", response_model=CustomerResponse)
@@ -54,15 +54,15 @@ def update(
     customer_id: int,
     data: CustomerUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(get_current_user),
 ):
-    return update_customer(db, customer_id, data)
+    return update_customer(db, customer_id, data, current_user)
 
 
 @router.delete("/{customer_id}", status_code=204)
 def delete(
     customer_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(get_current_user),
 ):
-    delete_customer(db, customer_id)
+    delete_customer(db, customer_id, current_user)

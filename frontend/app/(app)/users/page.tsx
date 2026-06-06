@@ -24,7 +24,7 @@ export default function UsersPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (currentUser && currentUser.role !== "admin") {
+    if (currentUser && currentUser.role !== "superadmin") {
       router.push("/dashboard");
       return;
     }
