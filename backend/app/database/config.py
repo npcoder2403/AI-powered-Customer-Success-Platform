@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     AI_MODEL: str = "llama-3.3-70b-versatile"
     CACHE_TTL: int = 300
     FRONTEND_URL: str = "http://localhost:3000"
-    ENVIRONMENT: str = os.getenv("RENDER", "development")
+    ENVIRONMENT: str = "production" if os.getenv("RENDER") else "development"
 
     class Config:
         env_file = ".env"

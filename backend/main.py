@@ -15,7 +15,6 @@ db.close()
 app = FastAPI(title="Customer Success Platform API", version="1.0.0")
 
 allowed_origins = [
-    "http://localhost:3000",
     settings.FRONTEND_URL,
 ]
 
