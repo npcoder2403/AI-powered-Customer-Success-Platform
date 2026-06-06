@@ -1,0 +1,62 @@
+services:
+  - type: web
+    name: cs-platform-backend
+    runtime: python
+    region: oregon
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cs-platform-db
+          property: connectionURI
+      - key: REDIS_URL
+        fromService:
+          name: cs-platform-redis
+          type: redis
+          property: connectionURI
+      - key: SECRET_KEY
+        generateValue: true
+      - key: AI_API_KEY
+        sync: false
+      - key: AI_API_URL
+        value: https://api.groq.com/openai/v1/chat/completions
+      - key: AI_MODEL
+        value: llama-3.3-70b-versatile
+      - key: CACHE_TTL
+        value: "300"
+      - key: FRONTEND_URL
+        fromService:
+          name: cs-platform-frontend
+          type: web
+          property: url
+    healthCheckPath: /api/health
+
+  - type: web
+    name: cs-platform-frontend
+    runtime: node
+    region: oregon
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: cs-platform-backend
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+          property: url
+
+databases:
+  - name: cs-platform-db
+    region: oregon
+    plan: free
+    databaseName: customer_success
+
+services:
+  - type: redis
+    name: cs-platform-redis
+    region: oregon
+    plan: free
+    maxmemoryPolicy: allkeys-lru
