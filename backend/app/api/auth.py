@@ -19,7 +19,7 @@ def set_auth_cookie(response: Response, token: str):
         value=token,
         httponly=True,
         secure=is_production,
-        samesite="none" if is_production else "lax",
+        samesite="lax",
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path="/",
     )
