@@ -20,7 +20,7 @@ import {
 import { useState } from "react";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, minRole: "user" },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, minRole: "admin" },
   { href: "/customers", label: "Customers", icon: Users, minRole: "admin" },
   { href: "/interactions", label: "Interactions", icon: MessageSquare, minRole: "user" },
   { href: "/users", label: "User Management", icon: Shield, minRole: "superadmin" },
