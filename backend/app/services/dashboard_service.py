@@ -8,7 +8,17 @@ from app.models.user import User
 
 
 def _is_admin(user: User) -> bool:
-    return user.role.value == "admin"
+    return user.role.value in ("admin", "superadmin")
+
+
+def _get_org_admin_id(db: Session, user: User) -> int:
+    """For customer users, find the admin who created their customer record."""
+    if _is_admin(user):
+        return user.id
+    customer = db.query(Customer).filter(Customer.email == user.email).first()
+    if customer and customer.created_by:
+        return customer.created_by
+    return user.id
 
 
 def get_dashboard_metrics(db: Session, current_user: User | None = None) -> dict:
@@ -17,10 +27,11 @@ def get_dashboard_metrics(db: Session, current_user: User | None = None) -> dict
     insight_query = db.query(AIInsight)
 
     if current_user:
-        customer_query = customer_query.filter(Customer.created_by == current_user.id)
-        interaction_query = interaction_query.filter(Interaction.created_by == current_user.id)
+        owner_id = _get_org_admin_id(db, current_user)
+        customer_query = customer_query.filter(Customer.created_by == owner_id)
+        interaction_query = interaction_query.filter(Interaction.created_by == owner_id)
         insight_query = insight_query.join(Interaction, AIInsight.interaction_id == Interaction.id).filter(
-            Interaction.created_by == current_user.id
+            Interaction.created_by == owner_id
         )
 
     total_customers = customer_query.count()

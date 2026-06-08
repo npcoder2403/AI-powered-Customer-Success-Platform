@@ -28,6 +28,8 @@ function InteractionsContent() {
   const dispatch = useDispatch<AppDispatch>();
   const searchParams = useSearchParams();
   const { items, loading, totalPages } = useSelector((state: RootState) => state.interactions);
+  const { user } = useSelector((state: RootState) => state.auth);
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
   const [currentPage, setCurrentPage] = useState(1);
   const [interactionType, setInteractionType] = useState("");
   const [customerId, setCustomerId] = useState(searchParams.get("customer_id") || "");
@@ -46,7 +48,7 @@ function InteractionsContent() {
       <PageHeader
         title="Interactions"
         description="Track meetings, calls, and communications with customers"
-        actions={<Link href="/interactions/create"><Button icon={Plus}>New Interaction</Button></Link>}
+        actions={isAdmin ? <Link href="/interactions/create"><Button icon={Plus}>New Interaction</Button></Link> : undefined}
       />
 
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 mb-6">
@@ -72,11 +74,11 @@ function InteractionsContent() {
           title={debouncedCustomerId || interactionType ? "No matching interactions" : "No interactions yet"}
           message={debouncedCustomerId || interactionType ? "Try adjusting your filters." : "Record your first customer interaction to get started."}
           icon={<MessageSquare className="w-8 h-8 text-slate-400" />}
-          action={!debouncedCustomerId && !interactionType ? <Link href="/interactions/create"><Button icon={Plus} size="sm">New Interaction</Button></Link> : undefined}
+          action={isAdmin && !debouncedCustomerId && !interactionType ? <Link href="/interactions/create"><Button icon={Plus} size="sm">New Interaction</Button></Link> : undefined}
         />
       ) : (
         <div>
-          <Table headers={["Title", "Customer", "Type", "Date", "Sentiment", "Actions"]}>
+          <Table headers={isAdmin ? ["Title", "Customer", "Type", "Date", "Sentiment", "Actions"] : ["Title", "Customer", "Type", "Date", "Sentiment"]}>
             {items.map((i) => (
               <TableRow key={i.id}>
                 <TableCell className="font-semibold text-slate-800">{i.title}</TableCell>
@@ -84,12 +86,14 @@ function InteractionsContent() {
                 <TableCell><Badge>{i.interaction_type}</Badge></TableCell>
                 <TableCell className="text-slate-500">{new Date(i.meeting_date).toLocaleDateString()}</TableCell>
                 <TableCell>{i.ai_insight ? <Badge>{i.ai_insight.sentiment}</Badge> : <span className="text-xs text-slate-400">--</span>}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Link href={`/interactions/${i.id}`} className="p-2 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"><Eye className="w-4 h-4" /></Link>
-                    <Link href={`/interactions/${i.id}/edit`} className="p-2 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors"><Pencil className="w-4 h-4" /></Link>
-                  </div>
-                </TableCell>
+                {isAdmin && (
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Link href={`/interactions/${i.id}`} className="p-2 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"><Eye className="w-4 h-4" /></Link>
+                      <Link href={`/interactions/${i.id}/edit`} className="p-2 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors"><Pencil className="w-4 h-4" /></Link>
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </Table>

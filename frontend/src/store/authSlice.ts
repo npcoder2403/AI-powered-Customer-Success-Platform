@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { authService } from "@/src/services/authService";
+import { authService, CheckEmailResult } from "@/src/services/authService";
 import { User } from "@/src/types";
 import { getErrorMessage } from "@/src/utils/getErrorMessage";
 
@@ -26,6 +26,30 @@ export const register = createAsyncThunk(
       return res;
     } catch (err: unknown) {
       return rejectWithValue(getErrorMessage(err, "Registration failed"));
+    }
+  }
+);
+
+export const checkEmail = createAsyncThunk(
+  "auth/checkEmail",
+  async (email: string, { rejectWithValue }) => {
+    try {
+      return await authService.checkEmail(email);
+    } catch (err: unknown) {
+      return rejectWithValue(getErrorMessage(err, "Email check failed"));
+    }
+  }
+);
+
+export const setPassword = createAsyncThunk(
+  "auth/setPassword",
+  async (data: { email: string; password: string }, { rejectWithValue }) => {
+    try {
+      const res = await authService.setPassword(data);
+      localStorage.setItem("user", JSON.stringify(res.user));
+      return res;
+    } catch (err: unknown) {
+      return rejectWithValue(getErrorMessage(err, "Failed to set password"));
     }
   }
 );
@@ -75,6 +99,12 @@ const authSlice = createSlice({
       .addCase(register.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(register.fulfilled, (state, action) => { state.loading = false; state.user = action.payload.user; state.isAuthenticated = true; })
       .addCase(register.rejected, (state, action) => { state.loading = false; state.error = action.payload as string; })
+      .addCase(checkEmail.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(checkEmail.fulfilled, (state) => { state.loading = false; })
+      .addCase(checkEmail.rejected, (state, action) => { state.loading = false; state.error = action.payload as string; })
+      .addCase(setPassword.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(setPassword.fulfilled, (state, action) => { state.loading = false; state.user = action.payload.user; state.isAuthenticated = true; })
+      .addCase(setPassword.rejected, (state, action) => { state.loading = false; state.error = action.payload as string; })
       .addCase(login.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(login.fulfilled, (state, action) => { state.loading = false; state.user = action.payload.user; state.isAuthenticated = true; })
       .addCase(login.rejected, (state, action) => { state.loading = false; state.error = action.payload as string; })

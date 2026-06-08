@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import { fetchCustomers } from "@/src/store/customerSlice";
 import { AppDispatch, RootState } from "@/src/store/store";
 import Link from "next/link";
@@ -33,10 +34,18 @@ const statusOptions = [
 
 export default function CustomersPage() {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
   const { items, loading, totalPages, total } = useSelector((state: RootState) => state.customers);
   const { user } = useSelector((state: RootState) => state.auth);
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (user && !isAdmin) {
+      router.replace("/dashboard");
+    }
+  }, [user, isAdmin, router]);
+
   const [industry, setIndustry] = useState("");
   const [status, setStatus] = useState("");
   const [currentPage, setCurrentPage] = useState(1);

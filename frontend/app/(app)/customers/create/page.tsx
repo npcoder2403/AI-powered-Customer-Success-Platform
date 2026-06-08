@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import { RootState } from "@/src/store/store";
 import { Formik, Form } from "formik";
 import { customerService } from "@/src/services/customerService";
 import { getErrorMessage } from "@/src/utils/getErrorMessage";
@@ -27,7 +29,14 @@ const statusOptions = [
 
 export default function CreateCustomerPage() {
   const router = useRouter();
+  const { user } = useSelector((state: RootState) => state.auth);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user && user.role !== "admin" && user.role !== "superadmin") {
+      router.replace("/dashboard");
+    }
+  }, [user, router]);
 
   return (
     <div className="max-w-2xl mx-auto">

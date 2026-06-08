@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import { RootState } from "@/src/store/store";
 import { Formik, Form, useFormikContext } from "formik";
 import { interactionService } from "@/src/services/interactionService";
 import { customerService } from "@/src/services/customerService";
@@ -35,8 +37,15 @@ function AiHint() {
 
 export default function CreateInteractionPage() {
   const router = useRouter();
+  const { user } = useSelector((state: RootState) => state.auth);
   const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
+
+  useEffect(() => {
+    if (user && user.role !== "admin" && user.role !== "superadmin") {
+      router.replace("/dashboard");
+    }
+  }, [user, router]);
 
   useEffect(() => {
     customerService.list({ page: 1, page_size: 100 }).then((res) => setCustomers(res.items));

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCustomer } from "@/src/store/customerSlice";
 import { AppDispatch, RootState } from "@/src/store/store";
@@ -15,10 +15,17 @@ import { Pencil, Mail, Phone, Building, Calendar, Globe, MessageSquare } from "l
 
 export default function CustomerDetailPage() {
   const { id } = useParams();
+  const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { current: customer, loading } = useSelector((state: RootState) => state.customers);
   const { user } = useSelector((state: RootState) => state.auth);
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+
+  useEffect(() => {
+    if (user && !isAdmin) {
+      router.replace("/dashboard");
+    }
+  }, [user, isAdmin, router]);
 
   useEffect(() => { if (id) dispatch(fetchCustomer(Number(id))); }, [dispatch, id]);
 

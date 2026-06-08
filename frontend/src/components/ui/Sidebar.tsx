@@ -20,12 +20,14 @@ import {
 import { useState } from "react";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, adminOnly: false },
-  { href: "/customers", label: "Customers", icon: Users, adminOnly: false },
-  { href: "/interactions", label: "Interactions", icon: MessageSquare, adminOnly: false },
-  { href: "/users", label: "User Management", icon: Shield, adminOnly: true },
-  { href: "/profile", label: "Profile", icon: UserCircle, adminOnly: false },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, minRole: "user" },
+  { href: "/customers", label: "Customers", icon: Users, minRole: "admin" },
+  { href: "/interactions", label: "Interactions", icon: MessageSquare, minRole: "user" },
+  { href: "/users", label: "User Management", icon: Shield, minRole: "superadmin" },
+  { href: "/profile", label: "Profile", icon: UserCircle, minRole: "user" },
 ];
+
+const roleLevel: Record<string, number> = { user: 0, admin: 1, superadmin: 2 };
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -55,7 +57,7 @@ export default function Sidebar() {
       <nav className="flex-1 px-3 mt-2">
         <p className="px-3 mb-2 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Menu</p>
         <div className="space-y-0.5">
-          {navItems.filter((item) => !item.adminOnly || user?.role === "superadmin").map((item) => {
+          {navItems.filter((item) => (roleLevel[user?.role || "user"] ?? 0) >= (roleLevel[item.minRole] ?? 0)).map((item) => {
             const active = pathname.startsWith(item.href);
             return (
               <Link
@@ -118,9 +120,8 @@ export default function Sidebar() {
       )}
 
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-40 w-[260px] transform transition-transform duration-300 lg:translate-x-0 ${
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed lg:static inset-y-0 left-0 z-40 w-[260px] transform transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         {nav}
       </aside>

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import { RootState } from "@/src/store/store";
 import { Formik, Form } from "formik";
 import { customerService } from "@/src/services/customerService";
 import { getErrorMessage } from "@/src/utils/getErrorMessage";
@@ -29,9 +31,16 @@ const statusOptions = [
 export default function EditCustomerPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { user } = useSelector((state: RootState) => state.auth);
   const [pageLoading, setPageLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [initialValues, setInitialValues] = useState({ company_name: "", contact_name: "", email: "", phone: "", industry: "", status: "active" });
+
+  useEffect(() => {
+    if (user && user.role !== "admin" && user.role !== "superadmin") {
+      router.replace("/dashboard");
+    }
+  }, [user, router]);
 
   useEffect(() => {
     if (id) {

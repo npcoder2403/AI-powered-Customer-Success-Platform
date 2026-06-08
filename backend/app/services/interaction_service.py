@@ -10,7 +10,23 @@ from app.services.ai_service import generate_ai_insights
 
 
 def _is_admin(user: User) -> bool:
-    return user.role.value == "admin"
+    return user.role.value in ("admin", "superadmin")
+
+
+def _get_org_admin_id(db: Session, user: User) -> int:
+    """For customer users, find the admin who created their customer record."""
+    if _is_admin(user):
+        return user.id
+    customer = db.query(Customer).filter(Customer.email == user.email).first()
+    if customer and customer.created_by:
+        return customer.created_by
+    return user.id
+
+
+def _require_admin_role(user: User) -> None:
+    """Block customer users from write operations."""
+    if not _is_admin(user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Read-only access. Customers cannot modify data.")
 
 
 def _to_dict(item: Interaction) -> dict:
@@ -40,7 +56,8 @@ def get_interactions(
     query = db.query(Interaction).options(joinedload(Interaction.ai_insight), joinedload(Interaction.customer))
 
     if current_user:
-        query = query.filter(Interaction.created_by == current_user.id)
+        owner_id = _get_org_admin_id(db, current_user)
+        query = query.filter(Interaction.created_by == owner_id)
 
     if customer_id:
         query = query.filter(Interaction.customer_id == customer_id)
@@ -74,13 +91,17 @@ def get_interaction(db: Session, interaction_id: int, current_user: User | None 
     if not interaction:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Interaction not found")
 
-    if current_user and interaction.created_by != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    if current_user:
+        owner_id = _get_org_admin_id(db, current_user)
+        if interaction.created_by != owner_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
     return _to_dict(interaction)
 
 
 def create_interaction(db: Session, data: InteractionCreate, current_user: User | None = None) -> dict:
+    if current_user:
+        _require_admin_role(current_user)
     customer = db.query(Customer).filter(Customer.id == data.customer_id).first()
     if not customer:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
@@ -101,6 +122,8 @@ def create_interaction(db: Session, data: InteractionCreate, current_user: User 
 
 
 def update_interaction(db: Session, interaction_id: int, data: InteractionUpdate, current_user: User | None = None) -> dict:
+    if current_user:
+        _require_admin_role(current_user)
     interaction = db.query(Interaction).filter(Interaction.id == interaction_id).first()
     if not interaction:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Interaction not found")

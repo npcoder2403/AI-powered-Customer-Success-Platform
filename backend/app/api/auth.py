@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.database.config import settings
-from app.schemas.user import UserRegister, UserLogin, UserResponse
-from app.services.auth_service import register_user, login_user
+from app.schemas.user import UserRegister, UserLogin, UserResponse, CheckEmailRequest, SetPassword
+from app.services.auth_service import register_user, login_user, check_email, set_password
 from app.auth.jwt import get_current_user, COOKIE_NAME
 from app.models.user import User
 
@@ -35,6 +35,18 @@ def register(data: UserRegister, response: Response, db: Session = Depends(get_d
 @router.post("/login")
 def login(data: UserLogin, response: Response, db: Session = Depends(get_db)):
     result = login_user(db, data)
+    set_auth_cookie(response, result["access_token"])
+    return {"user": UserResponse.model_validate(result["user"])}
+
+
+@router.post("/check-email")
+def check_email_endpoint(data: CheckEmailRequest, db: Session = Depends(get_db)):
+    return check_email(db, data.email)
+
+
+@router.post("/set-password")
+def set_password_endpoint(data: SetPassword, response: Response, db: Session = Depends(get_db)):
+    result = set_password(db, data)
     set_auth_cookie(response, result["access_token"])
     return {"user": UserResponse.model_validate(result["user"])}
 

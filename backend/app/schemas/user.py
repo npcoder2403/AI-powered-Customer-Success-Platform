@@ -15,6 +15,15 @@ class UserLogin(BaseModel):
     password: str
 
 
+class CheckEmailRequest(BaseModel):
+    email: EmailStr
+
+
+class SetPassword(BaseModel):
+    email: EmailStr
+    password: str
+
+
 class UserResponse(BaseModel):
     id: int
     email: str

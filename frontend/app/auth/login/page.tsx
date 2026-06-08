@@ -1,21 +1,34 @@
 "use client";
 
+import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Formik, Form } from "formik";
-import { login } from "@/src/store/authSlice";
+import { login, checkEmail, setPassword } from "@/src/store/authSlice";
 import { AppDispatch, RootState } from "@/src/store/store";
-import { Zap, ArrowRight } from "lucide-react";
+import { Zap, ArrowRight, ArrowLeft, Lock, Mail } from "lucide-react";
 import toast from "react-hot-toast";
 import FormField from "@/src/components/ui/FormField";
 import Button from "@/src/components/ui/Button";
-import { loginSchema } from "@/src/utils/validationSchemas";
+import { loginSchema, setPasswordSchema, emailSchema } from "@/src/utils/validationSchemas";
+
+type LoginStep = "email" | "password" | "set_password";
 
 export default function LoginPage() {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { loading } = useSelector((state: RootState) => state.auth);
+
+  const [step, setStep] = useState<LoginStep>("email");
+  const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
+
+  const handleBack = () => {
+    setStep("email");
+    setEmail("");
+    setFullName("");
+  };
 
   return (
     <div className="min-h-screen flex">
@@ -54,45 +67,149 @@ export default function LoginPage() {
             <span className="text-lg font-bold text-slate-900">CS Platform</span>
           </div>
 
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Welcome back</h1>
-          <p className="text-sm text-slate-500 mt-1.5 mb-8">Sign in to your account to continue</p>
+          {/* Step 1: Email check */}
+          {step === "email" && (
+            <>
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Welcome back</h1>
+              <p className="text-sm text-slate-500 mt-1.5 mb-8">Enter your email to continue</p>
 
-          <Formik
-            initialValues={{ email: "", password: "" }}
-            validationSchema={loginSchema}
-            onSubmit={async (values, { setStatus }) => {
-              setStatus(undefined);
-              const result = await dispatch(login(values));
-              if (login.fulfilled.match(result)) {
-                toast.success("Welcome back!");
-                router.push("/dashboard");
-              } else {
-                const msg = (result.payload as string) || "Login failed";
-                setStatus(msg);
-                toast.error(msg);
-              }
-            }}
-          >
-            {({ status }) => (
-            <Form className="space-y-5" noValidate>
-              {status && (
-                <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 font-medium">
-                  {status}
-                </div>
-              )}
-              <FormField name="email" type="email" label="Email Address" placeholder="you@example.com" required />
-              <FormField name="password" type="password" label="Password" placeholder="Enter your password" required />
-              <Button type="submit" loading={loading} fullWidth size="lg" iconRight={ArrowRight}>
-                Sign In
-              </Button>
-            </Form>
-            )}
-          </Formik>
+              <Formik
+                initialValues={{ email: "" }}
+                validationSchema={emailSchema}
+                onSubmit={async (values, { setStatus }) => {
+                  setStatus(undefined);
+                  const result = await dispatch(checkEmail(values.email));
+                  if (checkEmail.fulfilled.match(result)) {
+                    const payload = result.payload;
+                    if (payload.status === "has_password") {
+                      setEmail(values.email);
+                      setFullName(payload.full_name || "");
+                      setStep("password");
+                    } else if (payload.status === "needs_password") {
+                      setEmail(values.email);
+                      setFullName(payload.full_name || "");
+                      setStep("set_password");
+                    } else {
+                      setStatus("No account found with this email.");
+                      toast.error("No account found with this email.");
+                    }
+                  } else {
+                    const msg = (result.payload as string) || "Something went wrong";
+                    setStatus(msg);
+                    toast.error(msg);
+                  }
+                }}
+              >
+                {({ status }) => (
+                  <Form className="space-y-5" noValidate>
+                    {status && (
+                      <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 font-medium">
+                        {status}
+                      </div>
+                    )}
+                    <FormField name="email" type="email" label="Email Address" placeholder="you@example.com" icon={Mail} required />
+                    <Button type="submit" loading={loading} fullWidth size="lg" iconRight={ArrowRight}>
+                      Continue
+                    </Button>
+                  </Form>
+                )}
+              </Formik>
 
-          <p className="text-center text-sm text-slate-500 mt-8">
-            Don&apos;t have an account?{" "}
-            <Link href="/auth/register" className="text-blue-600 font-semibold hover:text-blue-700">Create one</Link>
-          </p>
+              <p className="text-center text-sm text-slate-500 mt-8">
+                Don&apos;t have an account?{" "}
+                <Link href="/auth/register" className="text-blue-600 font-semibold hover:text-blue-700">Create one</Link>
+              </p>
+            </>
+          )}
+
+          {/* Step 2a: Login with password */}
+          {step === "password" && (
+            <>
+              <button onClick={handleBack} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6 transition-colors">
+                <ArrowLeft className="w-4 h-4" /> Back
+              </button>
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Welcome back{fullName ? `, ${fullName}` : ""}</h1>
+              <p className="text-sm text-slate-500 mt-1.5 mb-1">Enter your password to sign in</p>
+              <p className="text-xs text-slate-400 mb-8">{email}</p>
+
+              <Formik
+                initialValues={{ email, password: "" }}
+                validationSchema={loginSchema}
+                onSubmit={async (values, { setStatus }) => {
+                  setStatus(undefined);
+                  const result = await dispatch(login(values));
+                  if (login.fulfilled.match(result)) {
+                    toast.success("Welcome back!");
+                    router.push("/dashboard");
+                  } else {
+                    const msg = (result.payload as string) || "Login failed";
+                    setStatus(msg);
+                    toast.error(msg);
+                  }
+                }}
+              >
+                {({ status }) => (
+                  <Form className="space-y-5" noValidate>
+                    {status && (
+                      <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 font-medium">
+                        {status}
+                      </div>
+                    )}
+                    <FormField name="password" type="password" label="Password" placeholder="Enter your password" icon={Lock} required />
+                    <Button type="submit" loading={loading} fullWidth size="lg" iconRight={ArrowRight}>
+                      Sign In
+                    </Button>
+                  </Form>
+                )}
+              </Formik>
+            </>
+          )}
+
+          {/* Step 2b: Set password for existing customer */}
+          {step === "set_password" && (
+            <>
+              <button onClick={handleBack} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6 transition-colors">
+                <ArrowLeft className="w-4 h-4" /> Back
+              </button>
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Set your password</h1>
+              <p className="text-sm text-slate-500 mt-1.5 mb-1">
+                Hi {fullName || "there"}, we found your account. Please create a password to get started.
+              </p>
+              <p className="text-xs text-slate-400 mb-8">{email}</p>
+
+              <Formik
+                initialValues={{ password: "", confirmPassword: "" }}
+                validationSchema={setPasswordSchema}
+                onSubmit={async (values, { setStatus }) => {
+                  setStatus(undefined);
+                  const result = await dispatch(setPassword({ email, password: values.password }));
+                  if (setPassword.fulfilled.match(result)) {
+                    toast.success("Password set successfully! Welcome!");
+                    router.push("/dashboard");
+                  } else {
+                    const msg = (result.payload as string) || "Failed to set password";
+                    setStatus(msg);
+                    toast.error(msg);
+                  }
+                }}
+              >
+                {({ status }) => (
+                  <Form className="space-y-5" noValidate>
+                    {status && (
+                      <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 font-medium">
+                        {status}
+                      </div>
+                    )}
+                    <FormField name="password" type="password" label="Password" placeholder="Create a password (min 6 characters)" icon={Lock} required />
+                    <FormField name="confirmPassword" type="password" label="Confirm Password" placeholder="Confirm your password" icon={Lock} required />
+                    <Button type="submit" loading={loading} fullWidth size="lg" iconRight={ArrowRight}>
+                      Set Password & Sign In
+                    </Button>
+                  </Form>
+                )}
+              </Formik>
+            </>
+          )}
         </div>
       </div>
     </div>
