@@ -140,7 +140,8 @@ export default function LoginPage() {
                   const result = await dispatch(login(values));
                   if (login.fulfilled.match(result)) {
                     toast.success("Welcome back!");
-                    router.push("/dashboard");
+                    const role = result.payload.user.role;
+                    router.push(role === "admin" || role === "superadmin" ? "/dashboard" : "/interactions");
                   } else {
                     const msg = (result.payload as string) || "Login failed";
                     setStatus(msg);
@@ -185,7 +186,7 @@ export default function LoginPage() {
                   const result = await dispatch(setPassword({ email, password: values.password }));
                   if (setPassword.fulfilled.match(result)) {
                     toast.success("Password set successfully! Welcome!");
-                    router.push("/dashboard");
+                    router.push("/interactions");
                   } else {
                     const msg = (result.payload as string) || "Failed to set password";
                     setStatus(msg);

@@ -65,7 +65,8 @@ export default function RegisterPage() {
               const result = await dispatch(register({ full_name: values.full_name, email: values.email, password: values.password }));
               if (register.fulfilled.match(result)) {
                 toast.success("Account created successfully!");
-                router.push("/dashboard");
+                const role = result.payload.user.role;
+                router.push(role === "admin" || role === "superadmin" ? "/dashboard" : "/interactions");
               } else {
                 const msg = (result.payload as string) || "Registration failed";
                 setStatus(msg);

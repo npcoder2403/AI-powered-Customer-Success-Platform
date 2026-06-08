@@ -42,7 +42,7 @@ export default function CustomersPage() {
 
   useEffect(() => {
     if (user && !isAdmin) {
-      router.replace("/dashboard");
+      router.replace("/interactions");
     }
   }, [user, isAdmin, router]);
 

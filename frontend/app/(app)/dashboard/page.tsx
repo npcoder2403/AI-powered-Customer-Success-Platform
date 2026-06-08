@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import { fetchMetrics } from "@/src/store/dashboardSlice";
 import { AppDispatch, RootState } from "@/src/store/store";
 import LoadingSpinner from "@/src/components/shared/LoadingSpinner";
@@ -17,7 +18,15 @@ import {
 const COLORS = ["#10b981", "#f59e0b", "#ef4444"];
 
 export default function DashboardPage() {
+  const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    if (user && user.role !== "admin" && user.role !== "superadmin") {
+      router.replace("/interactions");
+    }
+  }, [user, router]);
   const { metrics, loading, error } = useSelector((state: RootState) => state.dashboard);
 
   useEffect(() => { dispatch(fetchMetrics()); }, [dispatch]);

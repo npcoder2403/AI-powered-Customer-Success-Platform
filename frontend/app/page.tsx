@@ -6,8 +6,13 @@ import { useRouter } from "next/navigation";
 export default function Home() {
   const router = useRouter();
   useEffect(() => {
-    const user = localStorage.getItem("user");
-    router.push(user ? "/dashboard" : "/auth/login");
+    const stored = localStorage.getItem("user");
+    if (!stored) {
+      router.push("/auth/login");
+    } else {
+      const user = JSON.parse(stored);
+      router.push(user.role === "admin" || user.role === "superadmin" ? "/dashboard" : "/interactions");
+    }
   }, [router]);
 
   return (

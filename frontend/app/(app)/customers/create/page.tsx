@@ -34,7 +34,7 @@ export default function CreateCustomerPage() {
 
   useEffect(() => {
     if (user && user.role !== "admin" && user.role !== "superadmin") {
-      router.replace("/dashboard");
+      router.replace("/interactions");
     }
   }, [user, router]);
 
