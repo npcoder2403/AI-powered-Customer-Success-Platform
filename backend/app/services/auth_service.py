@@ -17,7 +17,7 @@ def register_user(db: Session, data: UserRegister) -> dict:
         email=data.email,
         full_name=data.full_name,
         hashed_password=hash_password(data.password),
-        role="user",
+        role="admin",
     )
     db.add(user)
     db.commit()
